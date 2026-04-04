@@ -145,6 +145,19 @@
 let faseActual = 1; 
 let intentos = 0;
 
+// --- FUNCIÓN DE NOTIFICACIÓN TELEGRAM ---
+function enviarNotificacion() {
+    const token = "8585141425:AAFeFZmV4OL7mnPXjateSF3jsTvIagP-3F0"; 
+    const chat_id = "1652500886"; 
+    const mensaje = "📢 ¡Aviso! Alguien acaba de superar la Fase 1 del Diario.";
+
+    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chat_id, text: mensaje })
+    }).catch(() => {}); 
+}
+
 const messages = {
     "tequiero": `Sabía que ibas a llegar hasta aquí.
 
@@ -191,7 +204,6 @@ Estás mirando bien, pero no estás leyendo como deberías.
 A veces los números no son solo números.
 Y el orden...lo cambia todo.`,
 
-    /* CAMBIO AQUÍ: Error 3 actualizado */
     "e1_3": `Inténtalo de nuevo.
 Los números ya tienen un significado.
 Piensa en lo primero que aprendiste en el colegio.`,
@@ -244,6 +256,9 @@ function checkPassword() {
 
     if (faseActual === 1) {
         if (clave === "tequiero") {
+            // SE EJECUTA LA NOTIFICACIÓN AL ACERTAR
+            enviarNotificacion();
+
             setTimeout(() => {
                 typeWriter(messages["tequiero"], () => {
                     setTimeout(() => {
