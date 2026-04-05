@@ -278,8 +278,9 @@ function typeWriter(text, callback) {
 function checkPassword() {
     const input = document.getElementById("password");
     const ui = document.getElementById("ui");
+    if (!input.value.trim()) return;
     const clave = input.value.toLowerCase().replace(/\s/g, "");
-
+    input.blur();
     ui.classList.add("oculto");
 
     if (faseActual === 1) {
