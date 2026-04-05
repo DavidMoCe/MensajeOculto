@@ -65,7 +65,7 @@
             max-width: 95%;
             transition: opacity 0.8s ease;
             word-break: normal; 
-            overflow-wrap: break-word; 
+            overflow-wrap: anywhere; 
         }
 
         .letra-tinta {
@@ -224,27 +224,55 @@ function typeWriter(text, callback) {
     const scrollContainer = document.getElementById("scroll-container");
     element.innerHTML = "";
     element.style.opacity = "1";
-    let i = 0;
 
-    function typing() {
-        if (i < text.length) {
-            const char = text.charAt(i);
-            if (char === "\n") {
+    // Dividimos el texto en palabras manteniendo los saltos de línea (\n)
+    const words = text.split(/(\s+)/); 
+    let wordIndex = 0;
+
+    function typeNextWord() {
+        if (wordIndex < words.length) {
+            const word = words[wordIndex];
+
+            if (word.includes("\n")) {
+                // Si es un salto de línea, lo añadimos directamente
                 element.appendChild(document.createElement("br"));
+                wordIndex++;
+                setTimeout(typeNextWord, 40);
+            } else if (word.trim() === "") {
+                // Si es un espacio simple, lo añadimos y seguimos
+                element.appendChild(document.createTextNode(" "));
+                wordIndex++;
+                setTimeout(typeNextWord, 40);
             } else {
-                const span = document.createElement("span");
-                span.innerText = char;
-                span.className = "letra-tinta";
-                element.appendChild(span);
+                // Si es una palabra, creamos un contenedor que NO se rompa (nowrap)
+                const wordSpan = document.createElement("span");
+                wordSpan.style.display = "inline-block";
+                wordSpan.style.whiteSpace = "nowrap"; 
+                element.appendChild(wordSpan);
+
+                let charIndex = 0;
+                function typeChar() {
+                    if (charIndex < word.length) {
+                        const span = document.createElement("span");
+                        span.innerText = word[charIndex];
+                        span.className = "letra-tinta";
+                        wordSpan.appendChild(span);
+                        
+                        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                        charIndex++;
+                        setTimeout(typeChar, 40);
+                    } else {
+                        wordIndex++;
+                        setTimeout(typeNextWord, 40);
+                    }
+                }
+                typeChar();
             }
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-            i++;
-            setTimeout(typing, 40);
         } else if (callback) {
             callback();
         }
     }
-    typing();
+    typeNextWord();
 }
 
 function checkPassword() {
