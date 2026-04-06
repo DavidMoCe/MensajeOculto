@@ -143,13 +143,6 @@
 
 <script>
 
-async function generarHash(texto) {
-    const msgUint8 = new TextEncoder().encode(texto);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 let faseActual = 1; 
 let intentos = 0;
 
@@ -283,20 +276,18 @@ function typeWriter(text, callback) {
     typeNextWord();
 }
 
-async function checkPassword() {
+function checkPassword() {
     const input = document.getElementById("password");
     const ui = document.getElementById("ui");
     if (!input.value.trim()) return;
     const clave = input.value.toLowerCase().replace(/\s/g, "");
     
-    // Generamos el hash de lo que el usuario escribió
-    const hashIntroducido = await generarHash(clave);
 
     input.blur();
     ui.classList.add("oculto");
 
     if (faseActual === 1) {
-        if (clave === "679e001878345c1106e224e758e72750e557297920392095f324831f24f0c78e") {
+        if (clave === "tequiero") {
             // SE EJECUTA LA NOTIFICACIÓN AL ACERTAR
             enviarNotificacion();
 
@@ -318,7 +309,7 @@ async function checkPassword() {
         }
     } 
     else if (faseActual === 2) {
-        if (clave === "60f47e33554b423194098950130932c020967396a583e7667d8a635836879895") {
+        if (clave === "amor escupido") {
             setTimeout(() => {
                 typeWriter(messages["mensaje2"]);
             }, 700);
