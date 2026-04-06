@@ -128,7 +128,7 @@
         }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;>
 
 <div class="paper">
     <div class="scroll-area" id="scroll-container">
@@ -142,6 +142,14 @@
 </div>
 
 <script>
+
+async function generarHash(texto) {
+    const msgUint8 = new TextEncoder().encode(texto);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 let faseActual = 1; 
 let intentos = 0;
 
@@ -159,7 +167,7 @@ function enviarNotificacion() {
 }
 
 const messages = {
-    "tequiero": `Sabía que ibas a llegar hasta aquí.
+    "mensaje1": `Sabía que ibas a llegar hasta aquí.
 
 No era una cuestión de suerte,
 era cuestión de cómo eres.
@@ -175,7 +183,7 @@ se revelan.
 
 Hazlo con cuidado.`,
 
-    "amorescupido": `Ahí está.
+    "mensaje2": `Ahí está.
 
 No esperaba menos de ti.
 
@@ -275,21 +283,25 @@ function typeWriter(text, callback) {
     typeNextWord();
 }
 
-function checkPassword() {
+async function checkPassword() {
     const input = document.getElementById("password");
     const ui = document.getElementById("ui");
     if (!input.value.trim()) return;
     const clave = input.value.toLowerCase().replace(/\s/g, "");
+    
+    // Generamos el hash de lo que el usuario escribió
+    const hashIntroducido = await generarHash(clave);
+
     input.blur();
     ui.classList.add("oculto");
 
     if (faseActual === 1) {
-        if (clave === "tequiero") {
+        if (clave === "679e001878345c1106e224e758e72750e557297920392095f324831f24f0c78e") {
             // SE EJECUTA LA NOTIFICACIÓN AL ACERTAR
             enviarNotificacion();
 
             setTimeout(() => {
-                typeWriter(messages["tequiero"], () => {
+                typeWriter(messages["mensaje1"], () => {
                     setTimeout(() => {
                         resetUI("Ahora, revela el secreto final...");
                         faseActual = 2;
@@ -306,9 +318,9 @@ function checkPassword() {
         }
     } 
     else if (faseActual === 2) {
-        if (clave === "amorescupido") {
+        if (clave === "60f47e33554b423194098950130932c020967396a583e7667d8a635836879895") {
             setTimeout(() => {
-                typeWriter(messages["amorescupido"]);
+                typeWriter(messages["mensaje2"]);
             }, 700);
         } else {
             setTimeout(() => {
@@ -335,6 +347,39 @@ function resetUI(newPlaceholder) {
 document.getElementById("password").addEventListener("keypress", (e) => {
     if (e.key === "Enter") checkPassword();
 });
+
+document.addEventListener('keydown', function(e) {
+    // Bloquear F12
+    if (e.keyCode == 123) {
+        e.preventDefault();
+        return false;
+    }
+    // Bloquear Ctrl+Shift+I (Inspeccionar)
+    if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) {
+        e.preventDefault();
+        return false;
+    }
+    // Bloquear Ctrl+Shift+C (Seleccionar elemento)
+    if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) {
+        e.preventDefault();
+        return false;
+    }
+    // Bloquear Ctrl+Shift+J (Consola)
+    if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) {
+        e.preventDefault();
+        return false;
+    }
+    // Bloquear Ctrl+U (Ver código fuente)
+    if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) {
+        e.preventDefault();
+        return false;
+    }
+});
+
+
+setInterval(function() {
+    debugger;
+}, 100);
 </script>
 
 </body>
