@@ -145,13 +145,32 @@
 
 let faseActual = 1; 
 let intentos = 0;
+let dataRemota = {};
 
-// --- FUNCIÓN DE NOTIFICACIÓN TELEGRAM ---
+const token = "8585141425:AAFeFZmV4OL7mnPXjateSF3jsTvIagP-3F0"; 
+const chat_id = "1652500886";
+
+async function cargarConfiguracion() {
+    try {
+        const r = await fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=-1`);
+        const d = await r.json();
+        if (d.ok && d.result.length > 0) {
+            const textoRaiz = d.result[0].message.text;
+            if (textoRaiz.startsWith("config:")) {
+                const partes = textoRaiz.replace("config:", "").split("|");
+                partes.forEach(p => {
+                    const [llave, valor] = p.split("=");
+                    if(llave && valor) dataRemota[llave.trim()] = valor.trim();
+                });
+                document.getElementById("password").placeholder = "Introduce el mensaje oculto";
+            }
+        }
+    } catch (e) { console.error("Error de conexión remota"); }
+}
+cargarConfiguracion()
+
 function enviarNotificacion() {
-    const token = "8585141425:AAFeFZmV4OL7mnPXjateSF3jsTvIagP-3F0"; 
-    const chat_id = "1652500886"; 
     const mensaje = "📢 ¡Aviso! Alguien acaba de superar la Fase 1 del mensaje.";
-
     fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -159,66 +178,59 @@ function enviarNotificacion() {
     }).catch(() => {}); 
 }
 
-const messages = {
-    "mensaje1": `Sabía que ibas a llegar hasta aquí.
 
-No era una cuestión de suerte,
-era cuestión de cómo eres.
+async function checkPassword() {
+    const input = document.getElementById("password");
+    const ui = document.getElementById("ui");
+    const claveUser = input.value.toLowerCase().replace(/\s/g, "");
 
-De no quedarte en la superficie,
-de insistir cuando algo no encaja,
-de mirar una vez más cuando otros ya habrían parado.
+    if (!dataRemota.clave1) return;
+    input.blur();
+    ui.classList.add("oculto");
 
-Ahora vuelve al principio.
+    if (faseActual === 1) {
+        if (claveUser === dataRemota.clave1) {
+            enviarNotificacion(); // Tu mensaje de aviso original
+            setTimeout(() => {
+                typeWriter(dataRemota.m1.replace(/\\n/g, '\n'), () => {
+                    setTimeout(() => {
+                        resetUI("Ahora, revela el secreto final...");
+                        faseActual = 2;
+                        intentos = 0;
+                    }, 12000);
+                });
+            }, 700);
+        } else {
+            intentos++;
+            let err = dataRemota.e1_1;
+            if (intentos >= 5) err = dataRemota.e1_3;
+            else if (intentos >= 3) err = dataRemota.e1_2;
+            setTimeout(() => {
+                typeWriter(err.replace(/\\n/g, '\n'), () => setTimeout(() => resetUI(), 7000));
+            }, 700);
+        }
+    } 
+    else if (faseActual === 2) {
+        if (claveUser === dataRemota.clave2) {
+            setTimeout(() => {
+                typeWriter(dataRemota.m2.replace(/\\n/g, '\n'));
+            }, 700);
+        } else {
+            intentos++;
+            let errF2 = dataRemota.e2_1;
+            if (intentos >= 5) errF2 = dataRemota.e2_3;
+            else if (intentos >= 3) errF2 = dataRemota.e2_2;
+            setTimeout(() => {
+                typeWriter(errF2.replace(/\\n/g, '\n'), () => setTimeout(() => resetUI("Ahora, revela el secreto final..."), 7000));
+            }, 700);
+        }
+    }
+}
 
-Algunas cosas no se leen…
-se revelan.
 
-Hazlo con cuidado.`,
 
-    "mensaje2": `Ahí está.
 
-No esperaba menos de ti.
 
-La forma en la que piensas,
-la paciencia que tienes,
-y esa manía tuya de no soltar las cosas hasta entenderlas…
-
-es exactamente lo que hace que todo esto tenga sentido.
-
-No era solo un juego.
-
-Era una forma de decirte que,
-siempre,
-merece la pena insistir en lo importante.
-
-Y tú lo eres.
-
-Tu regalo no está aquí.
-
-Está más cerca de lo que crees…
-y lleva tiempo esperando 
-a girar contigo.`,
-
-    "e1_1": `Incorrecto...
-Estás mirando bien, pero no estás leyendo como deberías.
-A veces los números no son solo números.
-Y el orden...lo cambia todo.`,
-
-    "e1_3": `Inténtalo de nuevo.
-Los números ya tienen un significado.
-Piensa en lo primero que aprendiste en el colegio.`,
-
-    "e1_5": `Estás muy cerca.
-Convierte los números en letras.
-Y después… colócalas en el orden correcto.`,
-
-    "errorFase2": `Solo has visto una parte.
-Vuelve a la nota.
-Algunas palabras necesitan algo más…
-
-para revelarse.`
-};
 
 function typeWriter(text, callback) {
     const element = document.getElementById("text");
@@ -275,51 +287,7 @@ function typeWriter(text, callback) {
     }
     typeNextWord();
 }
-
-function checkPassword() {
-    const input = document.getElementById("password");
-    const ui = document.getElementById("ui");
-    if (!input.value.trim()) return;
-    const clave = input.value.toLowerCase().replace(/\s/g, "");
-    
-
-    input.blur();
-    ui.classList.add("oculto");
-
-    if (faseActual === 1) {
-        if (clave === "tequiero") {
-            // SE EJECUTA LA NOTIFICACIÓN AL ACERTAR
-            enviarNotificacion();
-
-            setTimeout(() => {
-                typeWriter(messages["mensaje1"], () => {
-                    setTimeout(() => {
-                        resetUI("Ahora, revela el secreto final...");
-                        faseActual = 2;
-                        intentos = 0;
-                    }, 10000);
-                });
-            }, 700);
-        } else {
-            intentos++;
-            setTimeout(() => {
-                let msg = intentos >= 5 ? messages["e1_5"] : (intentos >= 3 ? messages["e1_3"] : messages["e1_1"]);
-                typeWriter(msg, () => setTimeout(() => resetUI("Introduce el mensaje oculto"), 9000));
-            }, 700);
-        }
-    } 
-    else if (faseActual === 2) {
-        if (clave === "amor escupido") {
-            setTimeout(() => {
-                typeWriter(messages["mensaje2"]);
-            }, 700);
-        } else {
-            setTimeout(() => {
-                typeWriter(messages["errorFase2"], () => setTimeout(() => resetUI("Ahora, revela el secreto final..."), 9000));
-            }, 700);
-        }
-    }
-}
+
 
 function resetUI(newPlaceholder) {
     const elementText = document.getElementById("text");
