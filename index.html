@@ -152,20 +152,33 @@ const chat_id = "1652500886";
 
 async function cargarConfiguracion() {
     try {
-        const r = await fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=-1`);
+        const r = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
         const d = await r.json();
+        
         if (d.ok && d.result.length > 0) {
-            const textoRaiz = d.result[0].message.text;
-            if (textoRaiz.startsWith("config:")) {
+           
+            const mensajeConfig = d.result.reverse().find(item => 
+                item.message && 
+                item.message.text && 
+                item.message.text.startsWith("config:")
+            );
+
+            if (mensajeConfig) {
+                const textoRaiz = mensajeConfig.message.text;
                 const partes = textoRaiz.replace("config:", "").split("|");
                 partes.forEach(p => {
                     const [llave, valor] = p.split("=");
                     if(llave && valor) dataRemota[llave.trim()] = valor.trim();
                 });
                 document.getElementById("password").placeholder = "Introduce el mensaje oculto";
+                console.log("Configuración cargada con éxito.");
+            } else {
+                console.warn("No se encontró ningún mensaje de configuración.");
             }
         }
-    } catch (e) { console.error("Error de conexión remota"); }
+    } catch (e) { 
+        console.error("Error de conexión remota"); 
+    }
 }
 cargarConfiguracion()
 
@@ -226,11 +239,6 @@ async function checkPassword() {
         }
     }
 }
-
-
-
-
-
 
 function typeWriter(text, callback) {
     const element = document.getElementById("text");
