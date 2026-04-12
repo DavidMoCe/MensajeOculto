@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Descubre el mensaje secreto</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            background: #0d0d0d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100dvh;
+            margin: 0;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        .paper {
+            background-color: #dcb35c;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 100%),
+                url('https://www.transparenttextures.com/patterns/natural-paper.png');
+            
+            width: 100%;
+            max-width: 650px;
+            height: 90vh;
+            max-height: 700px;
+            border-radius: 5px 15px 5px 25px / 15px 5px 25px 5px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8), inset 0 0 100px rgba(139, 69, 19, 0.5);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 50px 40px;
+        }
+
+        .scroll-area {
+            width: 100%;
+            height: auto;
+            max-height: 100%;
+            overflow-y: auto;
+            scrollbar-width: none;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .scroll-area::-webkit-scrollbar { display: none; }
+
+        .text {
+            font-family: 'Crimson Text', serif;
+            font-size: clamp(1.1rem, 4.5vw, 1.6rem); 
+            font-style: italic;
+            color: #1a1a1a;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            text-align: center;
+            margin: 0;
+            padding-bottom: 50px;
+            max-width: 95%;
+            transition: opacity 0.8s ease;
+            word-break: normal; 
+            overflow-wrap: anywhere; 
+        }
+
+        .letra-tinta {
+            display: inline-block;
+            opacity: 0;
+            transform: scale(1.1);
+            animation: aparecerTinta 0.5s ease-out forwards;
+        }
+
+        @keyframes aparecerTinta {
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .ui-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            width: 80%;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        input {
+            width: 100%;
+            max-width: 280px;
+            padding: 12px;
+            border: none;
+            border-bottom: 2px solid #5d4037;
+            background: transparent;
+            font-size: 1.1rem;
+            text-align: center;
+            outline: none;
+            color: #3e2723;
+            font-family: 'Crimson Text', serif;
+        }
+
+        button {
+            padding: 12px 40px;
+            background: #3e2723;
+            color: #dcb35c;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Crimson Text', serif;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .oculto { 
+            opacity: 0; 
+            transform: translate(-50%, -40%) scale(0.8); 
+            pointer-events: none; 
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+<div class="paper">
+    <div class="scroll-area" id="scroll-container">
+        <div class="text" id="text"></div>
+    </div>
+    
+    <div class="ui-container" id="ui">
+        <input type="text" id="password" placeholder="Introduce el mensaje oculto" autocomplete="off">
+        <button onclick="checkPassword()">Enviar</button>
+    </div>
+</div>
+
+<script>
+
+let faseActual = 1; 
+let intentos = 0;
+let dataRemota = {};
+
+const token = "8585141425:AAFeFZmV4OL7mnPXjateSF3jsTvIagP-3F0"; 
+const chat_id = "1652500886";
+
+async function cargarConfiguracion() {
+    try {
+        const r = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
+        const d = await r.json();
+        
+        if (d.ok && d.result.length > 0) {
+           
+            const mensajeConfig = d.result.reverse().find(item => 
+                item.message && 
+                item.message.text && 
+                item.message.text.startsWith("config:")
+            );
+
+            if (mensajeConfig) {
+                const textoRaiz = mensajeConfig.message.text;
+                const partes = textoRaiz.replace("config:", "").split("|");
+                partes.forEach(p => {
+                    const [llave, valor] = p.split("=");
+                    if(llave && valor) dataRemota[llave.trim()] = valor.trim();
+                });
+                document.getElementById("password").placeholder = "Introduce el mensaje oculto";
+                console.log("Configuración cargada con éxito.");
+            } else {
+                console.warn("No se encontró ningún mensaje de configuración.");
+            }
+        }
+    } catch (e) { 
+        console.error("Error de conexión remota"); 
+    }
+}
+cargarConfiguracion()
+
+function enviarNotificacion() {
+    const mensaje = "📢 ¡Aviso! Alguien acaba de superar la Fase 1 del mensaje.";
+    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chat_id, text: mensaje })
+    }).catch(() => {}); 
+}
+
+
+async function checkPassword() {
+    const input = document.getElementById("password");
+    const ui = document.getElementById("ui");
+    const claveUser = input.value.toLowerCase().replace(/\s/g, "");
+
+    if (!dataRemota.clave1) return;
+    input.blur();
+    ui.classList.add("oculto");
+
+    if (faseActual === 1) {
+        if (claveUser === dataRemota.clave1) {
+            enviarNotificacion(); // Tu mensaje de aviso original
+            setTimeout(() => {
+                typeWriter(dataRemota.m1.replace(/\\n/g, '\n'), () => {
+                    setTimeout(() => {
+                        resetUI("Ahora, revela el secreto final...");
+                        faseActual = 2;
+                        intentos = 0;
+                    }, 12000);
+                });
+            }, 700);
+        } else {
+            intentos++;
+            let err = dataRemota.e1_1;
+            if (intentos >= 5) err = dataRemota.e1_3;
+            else if (intentos >= 3) err = dataRemota.e1_2;
+            setTimeout(() => {
+                typeWriter(err.replace(/\\n/g, '\n'), () => setTimeout(() => resetUI(), 7000));
+            }, 700);
+        }
+    } 
+    else if (faseActual === 2) {
+        if (claveUser === dataRemota.clave2) {
+            setTimeout(() => {
+                typeWriter(dataRemota.m2.replace(/\\n/g, '\n'));
+            }, 700);
+        } else {
+            intentos++;
+            let errF2 = dataRemota.e2_1;
+            if (intentos >= 5) errF2 = dataRemota.e2_3;
+            else if (intentos >= 3) errF2 = dataRemota.e2_2;
+            setTimeout(() => {
+                typeWriter(errF2.replace(/\\n/g, '\n'), () => setTimeout(() => resetUI("Ahora, revela el secreto final..."), 7000));
+            }, 700);
+        }
+    }
+}
+
+function typeWriter(text, callback) {
+    const element = document.getElementById("text");
+    const scrollContainer = document.getElementById("scroll-container");
+    element.innerHTML = "";
+    element.style.opacity = "1";
+
+    // Dividimos el texto en palabras manteniendo los saltos de línea (\n)
+    const words = text.split(/(\s+)/); 
+    let wordIndex = 0;
+
+    function typeNextWord() {
+        if (wordIndex < words.length) {
+            const word = words[wordIndex];
+
+            if (word.includes("\n")) {
+                // Si es un salto de línea, lo añadimos directamente
+                element.appendChild(document.createElement("br"));
+                wordIndex++;
+                setTimeout(typeNextWord, 40);
+            } else if (word.trim() === "") {
+                // Si es un espacio simple, lo añadimos y seguimos
+                element.appendChild(document.createTextNode(" "));
+                wordIndex++;
+                setTimeout(typeNextWord, 40);
+            } else {
+                // Si es una palabra, creamos un contenedor que NO se rompa (nowrap)
+                const wordSpan = document.createElement("span");
+                wordSpan.style.display = "inline-block";
+                wordSpan.style.whiteSpace = "nowrap"; 
+                element.appendChild(wordSpan);
+
+                let charIndex = 0;
+                function typeChar() {
+                    if (charIndex < word.length) {
+                        const span = document.createElement("span");
+                        span.innerText = word[charIndex];
+                        span.className = "letra-tinta";
+                        wordSpan.appendChild(span);
+                        
+                        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                        charIndex++;
+                        setTimeout(typeChar, 40);
+                    } else {
+                        wordIndex++;
+                        setTimeout(typeNextWord, 40);
+                    }
+                }
+                typeChar();
+            }
+        } else if (callback) {
+            callback();
+        }
+    }
+    typeNextWord();
+}
+
+
+function resetUI(newPlaceholder) {
+    const elementText = document.getElementById("text");
+    const ui = document.getElementById("ui");
+    const input = document.getElementById("password");
+
+    elementText.style.opacity = "0";
+    setTimeout(() => {
+        elementText.innerHTML = "";
+        input.value = "";
+        if (newPlaceholder) input.placeholder = newPlaceholder;
+        ui.classList.remove("oculto");
+    }, 800);
+}
+
+document.getElementById("password").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") checkPassword();
+});
+
+document.addEventListener('keydown', function(e) {
+    // Bloquear F12
+    if (e.keyCode == 123) {
+        e.preventDefault();
+        return false;
+    }
+    // Bloquear Ctrl+Shift+I (Inspeccionar)
+    if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) {
+        e.preventDefault();
+        return false;
+    }
+    // Bloquear Ctrl+Shift+C (Seleccionar elemento)
+    if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) {
+        e.preventDefault();
+        return false;
+    }
+    // Bloquear Ctrl+Shift+J (Consola)
+    if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) {
+        e.preventDefault();
+        return false;
+    }
+    // Bloquear Ctrl+U (Ver código fuente)
+    if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) {
+        e.preventDefault();
+        return false;
+    }
+});
+
+
+setInterval(function() {
+    debugger;
+}, 100);
+</script>
+
+</body>
+</html>
